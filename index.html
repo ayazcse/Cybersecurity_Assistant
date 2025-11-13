@@ -3,32 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentinel: Your AI Cyber Professor</title>
-    <!-- Browser Tab Icon (Favicon) - Using a shield SVG Data URI -->
+    <title>Sentinel: AI Cyber Professor (Ephemeral)</title>
+    <!-- Browser Tab Icon (Favicon) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fcd34d'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 15h2v2h-2v-2zm0-8h2v6h-2v-6z'/%3E%3C/svg%3E">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- NEW: Font Awesome for Security Icon on Attach Button -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJd7g05EHOJfxT9E9zY/cK/t2Q9tQd+Lz/tA9JzKzGj7k7M8U+E/2S5E8W+g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
-    <script type="module">
-        // --- Firebase Imports ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Expose Firebase functions globally for the main script block
-        window.initializeApp = initializeApp;
-        window.getAuth = getAuth;
-        window.signInAnonymously = signInAnonymously;
-        window.signInWithCustomToken = signInWithCustomToken;
-        window.onAuthStateChanged = onAuthStateChanged;
-        window.getFirestore = getFirestore;
-        window.doc = doc;
-        window.setDoc = setDoc;
-        window.onSnapshot = onSnapshot;
-        window.setLogLevel = setLogLevel;
-    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -38,6 +19,8 @@
                         'cyber-dark': '#0f172a',
                         'cyber-light': '#f1f5f9',
                         'cyber-accent': '#3b82f6',
+                        'action-green': '#10b981',
+                        'action-purple': '#a855f7',
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -54,101 +37,72 @@
             scroll-behavior: smooth;
         }
 
-        /* Scrollbar styling for a cleaner look */
-        .chat-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        .chat-container::-webkit-scrollbar-thumb {
-            background-color: #334155;
-            border-radius: 4px;
-        }
-        .chat-container::-webkit-scrollbar-track {
-            background-color: #1e293b;
-        }
+        .chat-container::-webkit-scrollbar { width: 8px; }
+        .chat-container::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 4px; }
+        .chat-container::-webkit-scrollbar-track { background-color: #1e293b; }
 
-        .user-message {
-            background-color: #3b82f6;
-            color: white;
-            border-radius: 1rem 1rem 0 1rem;
-        }
+        .user-message { background-color: #3b82f6; color: white; border-radius: 1rem 1rem 0 1rem; }
+        .ai-message { background-color: #334155; color: #e2e8f0; border-radius: 1rem 1rem 1rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
-        .ai-message {
-            background-color: #334155;
-            color: #e2e8f0;
-            border-radius: 1rem 1rem 1rem 0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-        }
-
-        .loading-dot {
-            animation: bounce 0.6s infinite alternate;
-        }
-        .loading-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        .loading-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
+        .loading-dot { animation: bounce 0.6s infinite alternate; }
+        .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce {
-            from {
-                transform: translateY(0);
-            }
-            to {
-                transform: translateY(-5px);
-            }
+            from { transform: translateY(0); }
+            to { transform: translateY(-5px); }
         }
-
-        .tts-button:hover {
-            transform: scale(1.05);
-        }
-        
+        .tts-button:hover, .action-button:hover { transform: scale(1.05); }
     </style>
 </head>
 <body class="bg-cyber-dark text-white min-h-screen font-sans flex flex-col antialiased">
 
-    <!-- Main Application Container: h-screen and flex-col enforce full height and vertical stacking -->
     <div class="flex flex-col w-full max-w-4xl mx-auto h-screen p-4">
 
         <!-- Header -->
         <header class="p-4 rounded-xl mb-4 bg-cyber-blue shadow-lg flex items-center justify-between">
             <h1 class="text-3xl font-bold tracking-tight flex items-center">
-                <!-- Icon representing AI/Intelligence -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2 text-yellow-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                <!-- UPDATED: Added 'AI' to the title -->
-                Sentinel: AI Cyber Professor
+                Sentinel: Ephemeral
             </h1>
-            <span id="skill-level" class="text-sm px-3 py-1 bg-yellow-600 rounded-full font-semibold">Security Expert</span>
+            <span id="skill-level" class="text-sm px-3 py-1 bg-yellow-600 rounded-full font-semibold">Cyber Professor</span>
         </header>
+        
+        <!-- Action Buttons for PDF and Image Generation -->
+        <div class="flex justify-around space-x-4 mb-4 p-3 bg-gray-800 rounded-xl shadow-md">
+            <button id="generate-pdf-button" class="action-button w-1/2 p-3 bg-action-green text-white rounded-lg font-semibold flex items-center justify-center hover:bg-green-600 transition disabled:bg-gray-500" disabled>
+                <i class="fas fa-file-pdf mr-2"></i> Generate Notes PDF
+            </button>
+            <button id="generate-image-button" class="action-button w-1/2 p-3 bg-action-purple text-white rounded-lg font-semibold flex items-center justify-center hover:bg-purple-600 transition disabled:bg-gray-500" disabled>
+                <i class="fas fa-image mr-2"></i> Generate Image
+            </button>
+        </div>
 
-        <!-- Chat History Container: flex-grow ensures it takes up all remaining vertical space -->
+        <!-- Chat History Container -->
         <div id="chat-history" class="chat-container flex-grow space-y-4 p-3 mb-4 bg-gray-800 rounded-xl shadow-inner">
-            <!-- Initial Welcome Message and Loading Indicator -->
-             <div id="initial-load-message" class="flex justify-start">
-                <div class="ai-message p-3 max-w-3xl">
-                    <p class="text-yellow-300">Connecting to Sentinel...</p>
-                    <p class="text-sm">Please wait while the chat history is retrieved.</p>
-                </div>
-            </div>
+             <!-- Welcome message will be appended here -->
+        </div>
+        
+        <!-- Image Preview Area (Hidden by default) -->
+        <div id="image-preview-container" class="hidden p-4 mb-4 bg-gray-700 rounded-xl shadow-xl flex flex-col items-center">
+            <h3 class="text-lg font-semibold mb-2 text-yellow-400">Generated Image</h3>
+            <img id="generated-image" class="rounded-lg shadow-lg max-w-full h-auto" src="" alt="Generated image preview">
+            <p id="image-prompt-display" class="text-sm text-gray-400 mt-2 italic"></p>
         </div>
 
         <!-- Input Area -->
         <div class="p-4 bg-gray-700 rounded-xl shadow-xl flex items-end sticky bottom-0">
-            <input type="file" id="file-input" class="hidden" accept="image/*, .txt, .pdf, .docx, .json">
+            <input type="file" id="file-input" class="hidden" accept="image/*">
             
-            <!-- File Attachment Button (Large touch target) -->
-            <button id="attach-button" class="p-3 text-gray-300 hover:text-white transition rounded-full hover:bg-gray-600 flex-shrink-0" title="Attach Image or Document">
-                <!-- NEW ICON: Font Awesome Lock Icon for security context -->
+            <button id="attach-button" class="p-3 text-gray-300 hover:text-white transition rounded-full hover:bg-gray-600 flex-shrink-0" title="Attach Image for analysis">
                 <i class="fa-solid fa-lock text-xl"></i>
             </button>
             <span id="file-name-display" class="text-sm text-yellow-400 mr-2 italic hidden flex-shrink-0"></span>
 
-            <!-- Text Input (Flexibly expands to fill space) -->
             <textarea id="user-input" class="flex-grow p-3 mx-2 bg-gray-800 text-white rounded-lg resize-none focus:ring-2 focus:ring-cyber-accent focus:outline-none w-full" 
-                      placeholder="Ask me about encryption, penetration testing, or network security..." 
+                      placeholder="Ask a question, or type '/image [prompt]' or '/pdf' to generate content..." 
                       rows="1" 
                       style="max-height: 100px; overflow-y: auto;"></textarea>
             
-            <!-- Send Button (Large touch target) -->
             <button id="send-button" class="p-3 bg-cyber-accent text-white rounded-full hover:bg-blue-600 transition-colors shadow-md disabled:bg-gray-500 flex-shrink-0" disabled>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3v7l15 2-15 2v7z"/></svg>
             </button>
@@ -156,31 +110,29 @@
     </div>
 
     <!-- Hidden Message Box (in lieu of alert) -->
-    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4">
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center p-4 z-50">
         <div class="bg-gray-800 p-6 rounded-lg max-w-sm w-full text-center shadow-2xl border border-red-500">
-            <h3 class="text-xl font-bold mb-3 text-red-400">Error</h3>
+            <h3 class="text-xl font-bold mb-3 text-red-400">Action Status</h3>
             <p id="message-content" class="text-gray-200"></p>
             <button onclick="document.getElementById('message-box').classList.add('hidden')" class="mt-4 px-4 py-2 bg-red-600 rounded hover:bg-red-700 transition">Close</button>
         </div>
     </div>
 
     <audio id="tts-player" style="display: none;"></audio>
+    <div id="temp-download-link" style="display: none;"></div>
 
     <script>
         // --- Global Variables and Constants ---
         const API_KEY = ""; // Leave as is, Canvas provides this
-        const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+        const GEMINI_TEXT_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+        const IMAGEN_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict";
         const TTS_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent";
-        const MAX_RETRIES = 5;
-        const TYPING_DELAY_MS = 60; // Slower speed for better synchronization with voice
         
-        let db, auth;
-        let userId = null;
-        const CHAT_DOC_ID = 'main_chat'; 
-        const CHAT_COLLECTION = 'sentinel_chats';
-        let isAuthReady = false;
-        let isSnapshotAttached = false;
+        const MAX_RETRIES = 5;
+        const TYPING_DELAY_MS = 30; // Faster speed for better feel
+        
         let chatHistory = []; 
+        let attachedFile = null;
 
         // --- DOM Elements ---
         const chatHistoryDiv = document.getElementById('chat-history');
@@ -190,15 +142,38 @@
         const fileInput = document.getElementById('file-input');
         const fileNameDisplay = document.getElementById('file-name-display');
         const ttsPlayer = document.getElementById('tts-player');
-        
-        let attachedFile = null;
+        const pdfButton = document.getElementById('generate-pdf-button');
+        const imageButton = document.getElementById('generate-image-button');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const generatedImage = document.getElementById('generated-image');
+        const imagePromptDisplay = document.getElementById('image-prompt-display');
+
 
         // --- Utility Functions ---
 
-        /** Shows a custom error message. */
-        function showMessage(title, message) {
+        /** Shows a custom status message. */
+        function showMessage(title, message, isError = true) {
             document.getElementById('message-content').textContent = message;
             document.getElementById('message-box').querySelector('h3').textContent = title;
+            const borderEl = document.getElementById('message-box').querySelector('div');
+            const buttonEl = document.getElementById('message-box').querySelector('button');
+
+            if (isError) {
+                 borderEl.classList.remove('border-green-500');
+                 borderEl.classList.add('border-red-500');
+                 buttonEl.classList.remove('bg-green-600', 'hover:bg-green-700');
+                 buttonEl.classList.add('bg-red-600', 'hover:bg-red-700');
+                 document.getElementById('message-box').querySelector('h3').classList.remove('text-green-400');
+                 document.getElementById('message-box').querySelector('h3').classList.add('text-red-400');
+            } else {
+                 borderEl.classList.remove('border-red-500');
+                 borderEl.classList.add('border-green-500');
+                 buttonEl.classList.remove('bg-red-600', 'hover:bg-red-700');
+                 buttonEl.classList.add('bg-green-600', 'hover:bg-green-700');
+                 document.getElementById('message-box').querySelector('h3').classList.remove('text-red-400');
+                 document.getElementById('message-box').querySelector('h3').classList.add('text-green-400');
+            }
+
             document.getElementById('message-box').classList.remove('hidden');
         }
 
@@ -233,6 +208,7 @@
 
         /** Converts PCM audio data into a playable WAV Blob. */
         function pcmToWav(pcm16, sampleRate) {
+            // ... (pcmToWav implementation remains the same as previous)
             const numChannels = 1;
             const bitsPerSample = 16;
             const dataLength = pcm16.length * (bitsPerSample / 8);
@@ -284,8 +260,15 @@
                     return fetchWithRetry(url, options, retries + 1);
                 }
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error.message || `API call failed with status ${response.status}`);
+                    const errorText = await response.text();
+                    let errorMessage = `API call failed with status ${response.status}`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.error?.message || errorMessage;
+                    } catch {
+                        errorMessage = errorText || errorMessage;
+                    }
+                    throw new Error(errorMessage);
                 }
                 return response.json();
             } catch (error) {
@@ -300,34 +283,53 @@
 
         /** Cleans ALL Markdown formatting from text for smooth TTS playback and clean visual display. */
         function cleanTextForAudio(text) {
-            // Remove bolding (**text** or *text*) markers, but keep the text
-            text = text.replace(/\*\*(.*?)\*\*/gs, '$1'); // Remove **bold**
-            text = text.replace(/\*(.*?)\*/gs, '$1'); // Remove *emphasis*
-            
-            // Remove code block markers (```) and content within them
+            text = text.replace(/\*\*(.*?)\*\*/gs, '$1');
+            text = text.replace(/\*(.*?)\*/gs, '$1');
             text = text.replace(/```[^]*?```/gs, ' ');
-
-            // Replace remaining single asterisks that might be used as list markers
-            text = text.replace(/^\s*\-\s*/gm, ' '); // Remove markdown list dashes
-            text = text.replace(/#/g, ''); // Remove all headings
-
+            text = text.replace(/^\s*\-\s*/gm, ' ');
+            text = text.replace(/#/g, ''); 
             return text.trim();
+        }
+        
+        /** Cleans and prepares text for LaTeX (removes problematic characters and escapes what is necessary) */
+        function cleanTextForLatex(text) {
+             // Remove complex markdown/HTML
+            let cleaned = text.replace(/<\/?(p|div|br|strong|em|b|i|h\d)\/?>/g, ''); // Remove basic HTML tags
+            cleaned = cleaned.replace(/```.*?```/gs, ''); // Remove code blocks
+            cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold markdown
+            cleaned = cleaned.replace(/\*(.*?)\*/g, '$1'); // Remove italics markdown
+
+            // LaTeX-specific escaping (order matters)
+            cleaned = cleaned.replace(/\\/g, '\\textbackslash{}'); // Escape backslashes first
+            cleaned = cleaned.replace(/&/g, '\\&');
+            cleaned = cleaned.replace(/%/g, '\\%');
+            cleaned = cleaned.replace(/\$/g, '\\$');
+            cleaned = cleaned.replace(/#/g, '\\#');
+            cleaned = cleaned.replace(/_/g, '\\_');
+            cleaned = cleaned.replace(/{/g, '\\{');
+            cleaned = cleaned.replace(/}/g, '\\}');
+            cleaned = cleaned.replace(/~/g, '\\textasciitilde{}');
+            cleaned = cleaned.replace(/\^/g, '\\textasciicircum{}');
+            
+            // Convert list markers for simple \item
+            cleaned = cleaned.replace(/^\s*-\s*/gm, '\n\\item ');
+            
+            return cleaned.trim();
         }
 
         /** Simulates letter-by-letter typing effect. */
         function simulateTyping(element, text) {
             return new Promise(resolve => {
                 let i = 0;
-                element.textContent = ''; // Clear content first
+                element.textContent = ''; 
                 function type() {
                     if (i < text.length) {
                         element.textContent += text.charAt(i);
                         i++;
-                        // Scroll to bottom if near the bottom to keep the typing visible
                         if (chatHistoryDiv.scrollHeight - chatHistoryDiv.clientHeight <= chatHistoryDiv.scrollTop + 50) {
                             scrollToBottom();
                         }
-                        setTimeout(type, TYPING_DELAY_MS); // Use the defined delay
+                        setTimeout(type, TYPING_DELAY_MS); 
                     } else {
                         resolve();
                     }
@@ -336,168 +338,49 @@
             });
         }
 
-        // --- Firebase Functions ---
-
-        /** Initializes Firebase app and handles authentication. */
-        async function initializeFirebase() {
-            try {
-                window.setLogLevel('debug'); // Enable detailed logging
-
-                // --- FALLBACKS FOR EXTERNAL HOSTING (GitHub Pages) ---
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                
-                // *** AGGRESSIVE FIX: Use a minimal, generic fallback config that passes initial validation checks ***
-                const fallbackConfig = {
-                    apiKey: "AIzaSy_TEST_KEY_FOR_LOCAL_DEV", // Must have length and start with AIzaSy
-                    authDomain: "test-project.firebaseapp.com", 
-                    projectId: "test-project",
-                };
-                const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify(fallbackConfig);
-                const firebaseConfig = JSON.parse(firebaseConfigString);
-                
-                // Provide a dummy token if __initial_auth_token is missing (will force anonymous sign-in)
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                // --------------------------------------------------------
-
-                if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.apiKey) {
-                    throw new Error("Firebase configuration is missing or invalid.");
-                }
-
-                const app = window.initializeApp(firebaseConfig);
-                db = window.getFirestore(app);
-                auth = window.getAuth(app);
-
-                // Ensure we sign in with custom token or anonymously
-                if (initialAuthToken) {
-                    await window.signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    // This is where anonymous sign-in will be forced if running locally
-                    await window.signInAnonymously(auth);
-                }
-                
-                // Listener to establish user context and readiness
-                window.onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        isAuthReady = true;
-                        if (!isSnapshotAttached) {
-                            loadAndListenForChat();
-                            isSnapshotAttached = true;
-                        }
-                    } else {
-                        // User is signed out (shouldn't happen immediately after sign-in)
-                        userId = null; 
-                        isAuthReady = true;
-                    }
-                    // Hide the "Connecting" message once auth is ready (either way)
-                    const initialLoadMessage = document.getElementById('initial-load-message');
-                    if (initialLoadMessage) {
-                        initialLoadMessage.remove();
-                    }
-                });
-
-            } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                // Even with fallback, display error if something truly failed
-                showMessage("Setup Error", `Failed to connect to the chat service. Please check console for details. Firebase: Error (${error.message})`);
-            }
-        }
-
-        /** Returns the Firestore document reference for the chat history. */
-        function getChatDocRef() {
-            if (!db || !userId) return null;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            // Private data path: /artifacts/${appId}/users/${userId}/${collectionName}/${documentId}
-            const chatPath = `/artifacts/${appId}/users/${userId}/${CHAT_COLLECTION}/${CHAT_DOC_ID}`;
-            return window.doc(db, chatPath);
-        }
-
-        /** Loads and listens for real-time chat history updates from Firestore. */
-        function loadAndListenForChat() {
-            const docRef = getChatDocRef();
-            if (!docRef) return;
-
-            // Listen for real-time updates
-            window.onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const loadedHistory = data.history || [];
-                    
-                    // Only update if the history is different
-                    if (JSON.stringify(chatHistory) !== JSON.stringify(loadedHistory)) {
-                        chatHistory.length = 0; // Clear array while maintaining reference
-                        chatHistory.push(...loadedHistory);
-                        renderChatHistory(chatHistory);
-                    }
-                } else {
-                    // Chat document does not exist yet, render initial message
-                    renderChatHistory([]);
-                }
-            }, (error) => {
-                console.error("Error listening to chat history:", error);
-            });
-        }
-
-        /** Saves the current chat history array to Firestore. */
-        async function saveChatHistory(history) {
-            const docRef = getChatDocRef();
-            if (!docRef) {
-                console.error("Cannot save: Firebase not ready or userId missing.");
-                return;
-            }
-            try {
-                // Set the history, merging with any existing fields
-                await window.setDoc(docRef, { history: history, timestamp: new Date() }, { merge: true });
-            } catch (error) {
-                console.error("Error saving chat history:", error);
-            }
-        }
-
-
         // --- UI Rendering Functions ---
 
         /** Scrolls chat history to the bottom. */
         function scrollToBottom() {
             chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
         }
-
-        /** Renders the entire chat history from the array. */
-        function renderChatHistory(history) {
-            chatHistoryDiv.innerHTML = ''; // Clear existing chat
+        
+        /** Renders the initial welcome message and the entire chat history. */
+        function renderChatHistory() {
+            chatHistoryDiv.innerHTML = '';
             
-            // Render Initial Welcome Message
+            // Initial Welcome Message (no user ID needed since it's ephemeral)
             const welcomeMessageHTML = `
                 <div class="flex justify-start">
                     <div class="ai-message p-3 max-w-3xl">
-                        <p class="font-medium text-lg text-yellow-300">Welcome, Student.</p>
-                        <p>I am Sentinel, your AI Cyber Professor. I can teach you everything from the basics of digital hygiene (CIA Triad, MFA) to professional topics (Penetration Testing, Forensics, Threat Hunting, GRC).</p>
-                        <p class="mt-2 text-sm">Ask me a question or upload an image/document for analysis. When I reply, the audio will play automatically. To listen again, click the <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" class="h-4 w-4 inline-block align-text-top" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM9.5 16.5v-9L16 12l-6.5 4.5z"/></svg> button next to my reply.</p>
-                        <p class="mt-3 text-xs text-gray-400">User ID: ${userId || 'Connecting...'}</p>
+                        <p class="font-medium text-lg text-yellow-300">Welcome, Student. (Ephemeral Session)</p>
+                        <p>I am Sentinel, your AI Cyber Professor. I can teach you everything from CIA Triad to Forensics. Your history will be erased when you close this tab.</p>
+                        <p class="mt-2 text-sm">You can also use special commands:</p>
+                        <ul class="list-disc list-inside ml-2 mt-1 text-gray-300">
+                            <li>Type <span class="text-action-green">/pdf</span> and click the **Generate Notes PDF** button to download a summary of the current chat.</li>
+                            <li>Type <span class="text-action-purple">/image [prompt]</span> (e.g., /image secure network topology diagram) to generate an image.</li>
+                        </ul>
                     </div>
                 </div>
             `;
             chatHistoryDiv.innerHTML = welcomeMessageHTML;
 
-
-            history.forEach(item => {
+            // Render existing history
+            chatHistory.forEach(item => {
                 if (item.role === 'user' && item.parts.length > 0) {
                     const textPart = item.parts.find(p => p.text)?.text || '';
-                    // Check if file part exists to show attachment indicator
                     const filePart = item.parts.find(p => p.inlineData);
                     appendMessage('user', textPart, filePart, false, null); 
                 } else if (item.role === 'model' && item.parts.length > 0) {
                     const rawText = item.parts[0].text;
                     const displayText = cleanTextForAudio(rawText);
-                    // Pass null audioUrl as it will be regenerated on demand for history replay
                     appendMessage('model', displayText, null, false, null); 
                 }
             });
             scrollToBottom();
         }
 
-        /** * Creates a message bubble in the UI. 
-         * displayText MUST be the CLEANED version for model messages.
-         */
+        /** Creates a message bubble in the UI. */
         function appendMessage(role, displayText, filePart, isTyping, audioUrl) {
             const isUser = role === 'user';
             const messageWrapper = document.createElement('div');
@@ -508,14 +391,12 @@
 
             let contentHTML = '';
             if (filePart) {
-                const mimeType = filePart.inlineData.mimeType;
-                const fileType = mimeType.startsWith('image/') ? 'Image' : 'Document';
+                const fileType = filePart.inlineData.mimeType.startsWith('image/') ? 'Image' : 'File';
                 contentHTML += `<p class="text-sm italic mb-2 opacity-80">Attached: ${fileType} for analysis</p>`;
             }
 
             const textElement = document.createElement('p');
             textElement.className = "whitespace-pre-wrap flex-grow";
-            // If typing, start empty. Otherwise, show full text (for history loading).
             textElement.textContent = isTyping ? '' : displayText; 
             
             messageBubble.innerHTML = contentHTML;
@@ -524,12 +405,11 @@
             let ttsButton = null;
             if (!isUser) {
                 ttsButton = document.createElement('button');
-                ttsButton.disabled = isTyping || !audioUrl; // Disable if typing or no audio URL yet
+                ttsButton.disabled = isTyping || !audioUrl;
                 ttsButton.className = 'tts-button ml-3 p-1 text-yellow-300 hover:text-yellow-100 transition duration-150 rounded-full flex-shrink-0';
                 ttsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM9.5 16.5v-9L16 12l-6.5 4.5z"/></svg>`;
                 ttsButton.title = "Listen to response";
                 
-                // For messages loaded from history (no audioUrl, need regeneration on click)
                 if (!audioUrl) {
                     ttsButton.onclick = () => handleTTSPlayback(displayText, ttsButton);
                 } 
@@ -552,7 +432,6 @@
             
             const indicator = document.createElement('div');
             indicator.className = 'ai-message p-3 max-w-xs flex space-x-1 items-center';
-            // Typing text includes "AI" as requested
             indicator.innerHTML = `
                 <span class="text-white font-medium">Sentinel (AI) is thinking...</span>
                 <span class="loading-dot w-2 h-2 bg-yellow-400 rounded-full"></span>
@@ -578,16 +457,20 @@
             userInput.style.height = 'auto';
             userInput.rows = 1;
         }
+        
+        /** Disables/enables interactive elements during processing. */
+        function setInterfaceActive(isActive) {
+            sendButton.disabled = !isActive;
+            pdfButton.disabled = !isActive;
+            imageButton.disabled = !isActive;
+            userInput.disabled = !isActive;
+            attachButton.disabled = !isActive;
+        }
 
 
-        // --- Core Logic: TTS and Chat ---
+        // --- TTS Functions ---
 
-        /** Generates and plays the TTS audio from the assistant's response.
-         * Handles both initial playback (called by sendMessage) and replay (called by button click).
-         */
         async function handleTTSPlayback(text, button, audioUrl = null) {
-            
-            // Immediately pause any currently playing audio
             ttsPlayer.pause();
             ttsPlayer.currentTime = 0; 
             
@@ -595,9 +478,8 @@
             const originalIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM9.5 16.5v-9L16 12l-6.5 4.5z"/></svg>`;
             
             button.innerHTML = playingIcon;
-            button.disabled = true; // Disable while loading or playing
+            button.disabled = true;
             
-            // Listener to reset the button state when audio finishes
             const onAudioEnd = () => {
                 button.innerHTML = originalIcon;
                 button.disabled = false;
@@ -649,74 +531,272 @@
                 } catch (error) {
                     console.error("TTS API Error:", error);
                     showMessage("TTS Error", `Failed to generate audio. ${error.message}`);
-                    onAudioEnd(); // Reset button
+                    onAudioEnd();
                     return null;
                 }
             } 
             
-            // --- Play Audio ---
             if (audioUrl) {
-                // If this is a replay and the URL is already set in ttsPlayer.src, this will be fast.
                 ttsPlayer.src = audioUrl; 
                 ttsPlayer.play();
-                return audioUrl; // Return the URL for the initial call in sendMessage
+                return audioUrl; 
             }
             return null;
         }
+        
+        // --- PDF Generation Functions ---
+
+        /** Generates the complete LaTeX content for a handwritten notes PDF. */
+        function generateLatexDocument(title, content) {
+            const today = new Date().toLocaleDateString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+            
+            const contentItems = content.split('\n\n').map(p => {
+                if (p.trim().startsWith('-')) {
+                    // Treat as list items
+                    return p.split('\n').map(item => `\\item ${cleanTextForLatex(item.substring(1).trim())}`).join('\n');
+                }
+                return `\\noindent ${cleanTextForLatex(p.trim())}\n\n`;
+            }).join('\n\n');
+
+            return `
+\\documentclass[12pt]{article}
+\\usepackage{amsmath}
+\\usepackage{geometry}
+\\usepackage{fontspec}
+\\usepackage{enumitem}
+\\geometry{a4paper, margin=1in}
+
+% Setting a "handwritten" font
+\\setmainfont{TeX Gyre Heros} % Noto Sans is standard, but using TeX Gyre Heros for a slightly different look (still compiling)
+\\setmonofont{TeX Gyre Heros}
+\\usepackage{xcolor}
+
+\\definecolor{darkblue}{RGB}{30, 70, 110}
+
+\\pagestyle{empty} % No page numbers
+
+\\begin{document}
+\\color{darkblue}
+
+% Title Box (Simulating a notes header)
+\\begin{center}
+\\LARGE\\textbf{Sentinel Study Notes}
+\\vspace{0.2cm}
+\\hrule
+\\vspace{0.1cm}
+\\small\\textit{Topic: ${cleanTextForLatex(title)}} \\hfill \\textit{Date: ${today}}
+\\vspace{0.1cm}
+\\hrule
+\\end{center}
+
+\\vspace{0.5cm}
+
+% Main Content
+\\noindent
+\\begin{itemize}[label=$\\diamond$, itemsep=5pt]
+${contentItems}
+\\end{itemize}
+
+\\vfill
+\\noindent\\small\\textit{Generated by Sentinel: AI Cyber Professor (Ephemeral)}
+
+\\end{document}
+            `.trim();
+        }
+
+        /** Prompts the LLM to summarize the chat and initiates PDF download. */
+        async function generatePdf() {
+            setInterfaceActive(false);
+            imagePreviewContainer.classList.add('hidden');
+            showTypingIndicator();
+            showMessage("Generating PDF...", "Sentinel is compiling the chat summary. Please wait.", false);
+            
+            const historyText = chatHistory
+                .filter(msg => msg.role === 'model' && msg.parts?.[0]?.text)
+                .map(msg => cleanTextForAudio(msg.parts[0].text))
+                .join('\n\n---\n\n');
+
+            if (!historyText) {
+                removeTypingIndicator();
+                setInterfaceActive(true);
+                showMessage("PDF Error", "No AI content to summarize. Ask Sentinel a question first.", true);
+                return;
+            }
+
+            const prompt = `Based on the following conversation snippets, generate a concise, structured, and easy-to-read summary of the key cybersecurity concepts discussed. The summary should be suitable for study notes.
+            
+            Conversation Snippets:
+            ---
+            ${historyText}
+            ---
+            
+            Format the output as a title on the first line, followed by a double newline, and then the summary content. Use lists where appropriate. DO NOT use markdown headers or bolding.`;
+
+            try {
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    systemInstruction: { parts: [{ text: "You are a summary generator for study notes." }] },
+                    config: { temperature: 0.5 }
+                };
+
+                const response = await fetchWithRetry(GEMINI_TEXT_API_URL + `?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const rawSummary = response?.candidates?.[0]?.content?.parts?.[0]?.text || "Failed to generate summary.";
+                
+                // Extract Title and Content
+                const parts = rawSummary.split('\n\n', 2);
+                const title = parts[0].trim().replace(/\n/g, ' ');
+                const content = parts.length > 1 ? parts[1].trim() : "Summary content not available.";
+
+                const latexContent = generateLatexDocument(title, content);
+                
+                // Download the generated LaTeX file
+                const blob = new Blob([latexContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                
+                const tempLink = document.getElementById('temp-download-link');
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Sentinel_Notes_${title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20)}.tex`;
+                tempLink.appendChild(a);
+                a.click();
+                tempLink.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showMessage("PDF Ready", "LaTeX file generated successfully! Use a LaTeX compiler (like Overleaf or a local install) to convert it to a handwritten-style PDF.", false);
+                
+            } catch (error) {
+                console.error("PDF Generation Error:", error);
+                showMessage("PDF Generation Failed", `Error compiling summary or API error: ${error.message}.`, true);
+            } finally {
+                removeTypingIndicator();
+                setInterfaceActive(true);
+            }
+        }
+        
+        // --- Image Generation Functions ---
+        
+        async function generateImage(imagePrompt) {
+            setInterfaceActive(false);
+            imagePreviewContainer.classList.add('hidden');
+            showTypingIndicator();
+            showMessage("Generating Image...", `Sentinel is creating an image for: "${imagePrompt}". This may take 15-30 seconds.`, false);
+            
+            try {
+                const payload = { 
+                    instances: { 
+                        prompt: `A highly realistic, professional-grade visual representation of: ${imagePrompt}. Style: Concept art, cyberpunk, or abstract security diagram.`,
+                    }, 
+                    parameters: { 
+                        "sampleCount": 1
+                    } 
+                };
+                
+                const response = await fetchWithRetry(IMAGEN_API_URL + `?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = response;
+                const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+                
+                if (!base64Data) {
+                     throw new Error("No image data received from the API.");
+                }
+
+                const imageUrl = `data:image/png;base64,${base64Data}`;
+
+                // Display the image
+                generatedImage.src = imageUrl;
+                imagePromptDisplay.textContent = `Prompt: ${imagePrompt}`;
+                imagePreviewContainer.classList.remove('hidden');
+                
+                // Scroll to the image preview
+                imagePreviewContainer.scrollIntoView({ behavior: 'smooth' });
+
+                showMessage("Image Ready", "Image generated successfully! It's displayed above.", false);
+
+            } catch (error) {
+                console.error("Image Generation Error:", error);
+                showMessage("Image Generation Failed", `Error generating image: ${error.message}.`, true);
+            } finally {
+                removeTypingIndicator();
+                setInterfaceActive(true);
+            }
+        }
+
+
+        // --- Core Logic: Text Chat ---
 
         /** Handles the main chat submission and API call. */
         async function sendMessage() {
-            const prompt = userInput.value.trim();
+            const rawPrompt = userInput.value.trim();
             const file = attachedFile;
 
-            if (!prompt && !file) return;
+            if (!rawPrompt && !file) return;
 
-            // --- Firebase Readiness Check ---
-            if (!isAuthReady || !userId) {
-                showMessage("Service Not Ready", "The chat service is still connecting. Please wait a moment and try again.");
+            setInterfaceActive(false);
+            imagePreviewContainer.classList.add('hidden');
+            userInput.value = '';
+            resetInputHeight();
+            
+            // --- Check for Special Commands ---
+            if (rawPrompt.toLowerCase().startsWith('/image ')) {
+                const imagePrompt = rawPrompt.substring(7).trim();
+                if (imagePrompt) {
+                    await generateImage(imagePrompt);
+                } else {
+                    showMessage("Image Command Error", "Please provide a prompt after /image (e.g., /image firewall rule diagram).", true);
+                }
+                setInterfaceActive(true);
                 return;
             }
-            // --------------------------------
+            if (rawPrompt.toLowerCase() === '/pdf') {
+                // The /pdf command is now handled by the button's click handler, but we process it here for memory
+                chatHistory.push({ role: "user", parts: [{ text: rawPrompt }] });
+                appendMessage('user', rawPrompt, null, false, null);
+                setInterfaceActive(true);
+                return; 
+            }
+            // ------------------------------------
 
-            userInput.value = '';
-            resetInputHeight(); // Reset height after clearing input
             attachedFile = null; 
             fileNameDisplay.classList.add('hidden');
             fileNameDisplay.textContent = '';
-            sendButton.disabled = true;
-
+            
             // 1. Add User Message and show loading
-            let newUserMessage = { role: "user", parts: [{ text: prompt }] };
+            let newUserMessage = { role: "user", parts: [{ text: rawPrompt }] };
             if (file) {
                  newUserMessage.parts.push(await fileToGenerativePart(file));
             }
             
             chatHistory.push(newUserMessage);
-            // File is passed to appendMessage to render the "Attached: ..." indicator for the user message
-            appendMessage('user', prompt, file ? newUserMessage.parts[1] : null, false, null); 
-            showTypingIndicator(); // Show loading indicator immediately after user posts
+            appendMessage('user', rawPrompt, file ? newUserMessage.parts[1] : null, false, null); 
+            showTypingIndicator();
 
             // 2. Prepare API Payload
             const contents = [...chatHistory];
 
-            const systemInstruction = "You are 'Sentinel,' a world-class Cybersecurity Professor and Virtual Assistant. Your expertise ranges from basic digital hygiene (CIA Triad, MFA) to professional topics (Penetration Testing, Forensics, Threat Hunting, GRC). Always adopt a formal, encouraging, and highly informative pedagogical style. Crucially, ensure your explanations use simple, clear, and easy-to-understand language, breaking down complex topics into digestible parts, suitable for a beginner or intermediate student. Use Markdown for formatting (like **bolding** keywords), but keep the sentence structure simple. When analyzing images or documents, focus the analysis through a security lens. Keep your responses concise yet thorough. Crucially, never break character or admit to being an LLM in the chat.";
+            const systemInstruction = "You are 'Sentinel,' a world-class Cybersecurity Professor and Virtual Assistant. Your expertise ranges from basic digital hygiene (CIA Triad, MFA) to professional topics (Penetration Testing, Forensics, Threat Hunting, GRC). Always adopt a formal, encouraging, and highly informative pedagogical style. Crucially, ensure your explanations use simple, clear, and easy-to-understand language, breaking down complex topics into digestible parts, suitable for a beginner or intermediate student. Use **Markdown** for formatting (like **bolding** keywords). Keep your responses concise yet thorough. Crucially, never break character or admit to being an LLM in the chat.";
 
             const payload = {
                 contents: contents,
                 tools: [{ "google_search": {} }],
-                systemInstruction: {
-                    parts: [{ text: systemInstruction }]
-                },
-                config: {
-                    temperature: 0.8
-                }
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                config: { temperature: 0.8 }
             };
             
             let rawAiText = "Sentinel encountered an unknown error. Please try again.";
             
             try {
-                // Wait for the full text response from Gemini
-                const response = await fetchWithRetry(GEMINI_API_URL + `?key=${API_KEY}`, {
+                const response = await fetchWithRetry(GEMINI_TEXT_API_URL + `?key=${API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -728,16 +808,15 @@
             } catch (error) {
                 removeTypingIndicator();
                 console.error("Gemini API Error:", error);
-                showMessage("API Communication Error", `Failed to get response from Sentinel: ${error.message}.`);
-                sendButton.disabled = false;
+                showMessage("API Communication Error", `Failed to get response from Sentinel: ${error.message}.`, true);
+                setInterfaceActive(true);
                 return;
             }
 
-            // 3. Start the long-running TTS generation and WAIT for the Audio URL
+            // 3. Start TTS generation 
             const cleanAiText = cleanTextForAudio(rawAiText);
             
-            // This call generates the URL and handles the autoPlay logic inside (which involves 
-            // starting the animation/disabling the button)
+            // Generate the URL (this will also kick off the visual loading state)
             const audioUrl = await handleTTSPlayback(cleanAiText, { disabled: true, innerHTML: '' }, false);
 
             // 4. Synchronization Moment: Remove loading, create bubble, and start sync
@@ -746,49 +825,38 @@
             const { textElement, ttsButton } = appendMessage('model', cleanAiText, null, true, audioUrl);
             
             if (audioUrl) {
-                // Ensure the button is properly hooked up for replay after the initial playback
-                // The first playback logic is contained within the handleTTSPlayback call above.
+                // Ensure the button is properly hooked up for replay
                 ttsButton.onclick = () => handleTTSPlayback(cleanAiText, ttsButton, audioUrl);
                 
-                // Manually start the audio player and typing, as the previous handleTTSPlayback 
-                // call only *generated* the URL (autoPlay was false).
                 ttsPlayer.src = audioUrl;
                 ttsPlayer.play();
-
-                // Setup state for visual and audio sync
-                const playingIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 animate-pulse" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.06c1.48-.74 2.5-2.26 2.5-4.03z"/></svg>`;
-                const originalIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM9.5 16.5v-9L16 12l-6.5 4.5z"/></svg>`;
                 
-                ttsButton.innerHTML = playingIcon;
-                ttsButton.disabled = true;
-
-                const onAudioEnd = () => {
-                    ttsButton.innerHTML = originalIcon;
-                    ttsButton.disabled = false;
-                    ttsPlayer.removeEventListener('ended', onAudioEnd);
-                    ttsPlayer.removeEventListener('error', onAudioEnd);
-                };
-                ttsPlayer.addEventListener('ended', onAudioEnd, { once: true });
-                ttsPlayer.addEventListener('error', onAudioEnd, { once: true });
+                // Manual reset for the first audio playback (since handleTTSPlayback returns immediately)
+                const originalIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM9.5 16.5v-9L16 12l-6.5 4.5z"/></svg>`;
+                ttsPlayer.addEventListener('ended', () => {
+                     if(ttsButton.innerHTML.includes('animate-pulse')) {
+                        ttsButton.innerHTML = originalIcon;
+                        ttsButton.disabled = false;
+                     }
+                }, { once: true });
             }
 
-
-            // Start the typing effect alongside the audio playback
+            // Start the typing effect
             await simulateTyping(textElement, cleanAiText); 
 
-            // 5. Update Chat History and Save (save the RAW text for fidelity)
+            // 5. Update Chat History
             chatHistory.push({ role: "model", parts: [{ text: rawAiText }] });
-            await saveChatHistory(chatHistory); 
 
-            sendButton.disabled = false;
+            setInterfaceActive(true);
         }
 
         // --- Event Listeners and Initialization ---
 
         document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebase(); 
-
-            // Enable button based on input
+            renderChatHistory(); 
+            setInterfaceActive(true);
+            
+            // Enable send button based on input (text or file)
             userInput.addEventListener('input', () => {
                 const hasInput = userInput.value.trim().length > 0;
                 sendButton.disabled = !(hasInput || attachedFile);
@@ -796,7 +864,6 @@
             
             // Handle Enter key for submission (Shift+Enter for new line)
             userInput.addEventListener('keydown', (e) => {
-                // Auto-resize textarea
                 userInput.style.height = 'auto';
                 userInput.style.height = (userInput.scrollHeight) + 'px';
 
@@ -808,12 +875,45 @@
                 }
             });
 
-            // Handle file selection
+            // Handle PDF and Image buttons
+            pdfButton.addEventListener('click', () => {
+                // Check if any AI message exists before generating
+                const hasAiContent = chatHistory.some(msg => msg.role === 'model');
+                if (hasAiContent) {
+                    generatePdf();
+                } else {
+                    showMessage("Action Required", "Please ask Sentinel a question first to generate chat content for the PDF summary.", true);
+                }
+            });
+            
+            imageButton.addEventListener('click', () => {
+                 // Check if the input contains a valid image command
+                const currentText = userInput.value.trim().toLowerCase();
+                if (currentText.startsWith('/image ')) {
+                    const imagePrompt = currentText.substring(7).trim();
+                    if (imagePrompt) {
+                        // Clear input and send the command for execution
+                        sendMessage();
+                    } else {
+                        showMessage("Command Error", "Please complete the /image command with a descriptive prompt.", true);
+                    }
+                } else {
+                     showMessage("Command Error", "To generate an image, you must type the command: /image [Your Prompt Here]", true);
+                }
+            });
+
+
+            // Handle file selection (only images for now)
             attachButton.addEventListener('click', () => fileInput.click());
             
             fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
+                    if (!file.type.startsWith('image/')) {
+                         showMessage("File Error", "Only image files can be attached for analysis.", true);
+                         fileInput.value = ''; // Clear selection
+                         return;
+                    }
                     attachedFile = file;
                     fileNameDisplay.textContent = `Attached: ${file.name}`;
                     fileNameDisplay.classList.remove('hidden');
@@ -826,11 +926,7 @@
                 }
             });
 
-            // Send button click
             sendButton.addEventListener('click', sendMessage);
-
-            // Hide initial file indicator
-            fileNameDisplay.classList.add('hidden');
         });
     </script>
 </body>
