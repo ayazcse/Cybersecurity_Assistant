@@ -346,9 +346,13 @@
                 // --- FALLBACKS FOR EXTERNAL HOSTING (GitHub Pages) ---
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 
-                // *** CRITICAL FIX: Use a placeholder API key that passes initial validation checks ***
-                const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : 
-                    '{"apiKey": "AIzaSyC1431241512412412412412412412412412412412", "authDomain": "dummy-project.firebaseapp.com", "projectId": "dummy-project", "storageBucket": "dummy-project.appspot.com", "messagingSenderId": "123456789012", "appId": "1:123456789012:web:a1b2c3d4e5f6g7h8i9j0"}';
+                // *** AGGRESSIVE FIX: Use a minimal, generic fallback config that passes initial validation checks ***
+                const fallbackConfig = {
+                    apiKey: "AIzaSy_TEST_KEY_FOR_LOCAL_DEV", // Must have length and start with AIzaSy
+                    authDomain: "test-project.firebaseapp.com", 
+                    projectId: "test-project",
+                };
+                const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify(fallbackConfig);
                 const firebaseConfig = JSON.parse(firebaseConfigString);
                 
                 // Provide a dummy token if __initial_auth_token is missing (will force anonymous sign-in)
@@ -367,6 +371,7 @@
                 if (initialAuthToken) {
                     await window.signInWithCustomToken(auth, initialAuthToken);
                 } else {
+                    // This is where anonymous sign-in will be forced if running locally
                     await window.signInAnonymously(auth);
                 }
                 
@@ -394,7 +399,7 @@
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
                 // Even with fallback, display error if something truly failed
-                showMessage("Setup Error", `Failed to connect to the chat service. Please check console for details. ${error.message}`);
+                showMessage("Setup Error", `Failed to connect to the chat service. Please check console for details. Firebase: Error (${error.message})`);
             }
         }
 
