@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sentinel: Your AI Cyber Professor</title>
-    <!-- NEW: Browser Tab Icon (Favicon) - Using a shield SVG Data URI -->
+    <!-- Browser Tab Icon (Favicon) - Using a shield SVG Data URI -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fcd34d'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 15h2v2h-2v-2zm0-8h2v6h-2v-6z'/%3E%3C/svg%3E">
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- NEW: Font Awesome for Security Icon on Attach Button -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJd7g05EHOJfxT9E9zY/cK/t2Q9tQd+Lz/tA9JzKzGj7k7M8U+E/2S5E8W+g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
     <script type="module">
         // --- Firebase Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -134,7 +137,8 @@
             
             <!-- File Attachment Button (Large touch target) -->
             <button id="attach-button" class="p-3 text-gray-300 hover:text-white transition rounded-full hover:bg-gray-600 flex-shrink-0" title="Attach Image or Document">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <!-- NEW ICON: Font Awesome Lock Icon for security context -->
+                <i class="fa-solid fa-lock text-xl"></i>
             </button>
             <span id="file-name-display" class="text-sm text-yellow-400 mr-2 italic hidden flex-shrink-0"></span>
 
@@ -457,7 +461,9 @@
             history.forEach(item => {
                 if (item.role === 'user' && item.parts.length > 0) {
                     const textPart = item.parts.find(p => p.text)?.text || '';
-                    appendMessage('user', textPart, null, false); 
+                    // Check if file part exists to show attachment indicator
+                    const filePart = item.parts.find(p => p.inlineData);
+                    appendMessage('user', textPart, filePart, false, null); 
                 } else if (item.role === 'model' && item.parts.length > 0) {
                     const rawText = item.parts[0].text;
                     const displayText = cleanTextForAudio(rawText);
@@ -471,7 +477,7 @@
         /** * Creates a message bubble in the UI. 
          * displayText MUST be the CLEANED version for model messages.
          */
-        function appendMessage(role, displayText, file, isTyping, audioUrl) {
+        function appendMessage(role, displayText, filePart, isTyping, audioUrl) {
             const isUser = role === 'user';
             const messageWrapper = document.createElement('div');
             messageWrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
@@ -480,9 +486,10 @@
             messageBubble.className = `${isUser ? 'user-message' : 'ai-message'} p-3 max-w-lg flex items-start`;
 
             let contentHTML = '';
-            if (file) {
-                const fileType = file.type.startsWith('image/') ? 'Image' : 'Document';
-                contentHTML += `<p class="text-sm italic mb-2 opacity-80">Attachment: ${fileType} - Not persisted to history</p>`;
+            if (filePart) {
+                const mimeType = filePart.inlineData.mimeType;
+                const fileType = mimeType.startsWith('image/') ? 'Image' : 'Document';
+                contentHTML += `<p class="text-sm italic mb-2 opacity-80">Attached: ${fileType} for analysis</p>`;
             }
 
             const textElement = document.createElement('p');
@@ -651,9 +658,14 @@
             sendButton.disabled = true;
 
             // 1. Add User Message and show loading
-            const newUserMessage = { role: "user", parts: file ? [{text: prompt}, await fileToGenerativePart(file)] : [{ text: prompt }] };
+            let newUserMessage = { role: "user", parts: [{ text: prompt }] };
+            if (file) {
+                 newUserMessage.parts.push(await fileToGenerativePart(file));
+            }
+            
             chatHistory.push(newUserMessage);
-            appendMessage('user', prompt, file, false, null);
+            // File is passed to appendMessage to render the "Attached: ..." indicator for the user message
+            appendMessage('user', prompt, file ? newUserMessage.parts[1] : null, false, null); 
             showTypingIndicator(); // Show loading indicator immediately after user posts
 
             // 2. Prepare API Payload
