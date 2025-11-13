@@ -343,11 +343,21 @@
             try {
                 window.setLogLevel('debug'); // Enable detailed logging
 
+                // --- FALLBACKS FOR EXTERNAL HOSTING (GitHub Pages) ---
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                
+                // Provide a dummy config if __firebase_config is missing or invalid
+                const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : 
+                    '{"apiKey": "AIzaSyC_Dummy_Key", "authDomain": "dummy-project.firebaseapp.com", "projectId": "dummy-project", "storageBucket": "dummy-project.appspot.com", "messagingSenderId": "123456789012", "appId": "1:123456789012:web:a1b2c3d4e5f6g7h8i9j0"}';
+                const firebaseConfig = JSON.parse(firebaseConfigString);
+                
+                // Provide a dummy token if __initial_auth_token is missing (will force anonymous sign-in)
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                // --------------------------------------------------------
 
-                if (Object.keys(firebaseConfig).length === 0) {
-                    throw new Error("Firebase configuration is missing.");
+                if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.apiKey) {
+                    // This error should be caught by the dummy config above, but kept as a safeguard
+                    throw new Error("Firebase configuration is missing or invalid.");
                 }
 
                 const app = window.initializeApp(firebaseConfig);
@@ -355,8 +365,8 @@
                 auth = window.getAuth(app);
 
                 // Ensure we sign in with custom token or anonymously
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await window.signInWithCustomToken(auth, __initial_auth_token);
+                if (initialAuthToken) {
+                    await window.signInWithCustomToken(auth, initialAuthToken);
                 } else {
                     await window.signInAnonymously(auth);
                 }
@@ -371,14 +381,18 @@
                             isSnapshotAttached = true;
                         }
                     } else {
-                        userId = null;
+                        // User is signed out (shouldn't happen immediately after sign-in)
+                        userId = null; 
                         isAuthReady = true;
                     }
+                    // Hide the "Connecting" message once auth is ready (either way)
+                    document.getElementById('initial-load-message').remove();
                 });
 
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
-                showMessage("Setup Error", `Failed to connect to the chat service. ${error.message}`);
+                // Even with fallback, display error if something truly failed
+                showMessage("Setup Error", `Failed to connect to the chat service. Please check console for details. ${error.message}`);
             }
         }
 
@@ -551,6 +565,13 @@
                 indicator.remove();
             }
         }
+        
+        /** Resets the height of the user input textarea to 1 row. */
+        function resetInputHeight() {
+            userInput.style.height = 'auto';
+            userInput.rows = 1;
+        }
+
 
         // --- Core Logic: TTS and Chat ---
 
@@ -651,7 +672,7 @@
             // --------------------------------
 
             userInput.value = '';
-            userInput.rows = 1;
+            resetInputHeight(); // Reset height after clearing input
             attachedFile = null; 
             fileNameDisplay.classList.add('hidden');
             fileNameDisplay.textContent = '';
