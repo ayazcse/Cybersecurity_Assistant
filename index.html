@@ -168,7 +168,7 @@
 
     <script>
         // --- Global Variables and Constants ---
-        const API_KEY = "AIzaSyAW04svVRmmvu7snKys3A484cOaF-FazQc"; // Leave as is, Canvas provides this
+        const API_KEY = ""; // Leave as is, Canvas provides this
         const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
         const TTS_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent";
         const MAX_RETRIES = 5;
@@ -346,9 +346,9 @@
                 // --- FALLBACKS FOR EXTERNAL HOSTING (GitHub Pages) ---
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 
-                // Provide a dummy config if __firebase_config is missing or invalid
+                // *** CRITICAL FIX: Use a placeholder API key that passes initial validation checks ***
                 const firebaseConfigString = typeof __firebase_config !== 'undefined' ? __firebase_config : 
-                    '{"apiKey": "AIzaSyC_Dummy_Key", "authDomain": "dummy-project.firebaseapp.com", "projectId": "dummy-project", "storageBucket": "dummy-project.appspot.com", "messagingSenderId": "123456789012", "appId": "1:123456789012:web:a1b2c3d4e5f6g7h8i9j0"}';
+                    '{"apiKey": "AIzaSyC1431241512412412412412412412412412412412", "authDomain": "dummy-project.firebaseapp.com", "projectId": "dummy-project", "storageBucket": "dummy-project.appspot.com", "messagingSenderId": "123456789012", "appId": "1:123456789012:web:a1b2c3d4e5f6g7h8i9j0"}';
                 const firebaseConfig = JSON.parse(firebaseConfigString);
                 
                 // Provide a dummy token if __initial_auth_token is missing (will force anonymous sign-in)
@@ -356,7 +356,6 @@
                 // --------------------------------------------------------
 
                 if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.apiKey) {
-                    // This error should be caught by the dummy config above, but kept as a safeguard
                     throw new Error("Firebase configuration is missing or invalid.");
                 }
 
@@ -386,7 +385,10 @@
                         isAuthReady = true;
                     }
                     // Hide the "Connecting" message once auth is ready (either way)
-                    document.getElementById('initial-load-message').remove();
+                    const initialLoadMessage = document.getElementById('initial-load-message');
+                    if (initialLoadMessage) {
+                        initialLoadMessage.remove();
+                    }
                 });
 
             } catch (error) {
